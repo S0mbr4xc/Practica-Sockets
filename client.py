@@ -5,6 +5,7 @@ from tkinter import scrolledtext
 from tkinter import simpledialog, messagebox
 from cryptography.fernet import Fernet
 
+
 # Clave simétrica compartida (debe ser la misma que en el servidor)
 KEY = b'L9tB8XrT_7hkTovA9uQzkBpE8T6gn15c8M6bUciTPfQ='
 cipher = Fernet(KEY)
@@ -48,14 +49,21 @@ class ChatClient:
 
     def receive_messages(self):
         """Recibe mensajes del servidor y los muestra en la interfaz gráfica."""
+        buffer = ""  # Almacenar datos parciales
         while self.running:
             try:
-                encrypted_message = self.client.recv(1024)
-                if not encrypted_message:
+                data = self.client.recv(1024)
+                if not data:
                     raise ConnectionResetError("Conexión cerrada por el servidor.")
 
-                message = cipher.decrypt(encrypted_message).decode('utf-8')
-                self.display_message(message)
+                # Agregar datos al buffer y descifrar
+                buffer += cipher.decrypt(data).decode('utf-8')
+
+                # Procesar mensajes completos en el buffer
+                while "\n" in buffer:
+                    message, buffer = buffer.split("\n", 1)
+                    self.display_message(message)
+
             except ConnectionResetError:
                 print("Conexión con el servidor cerrada.")
                 self.running = False
